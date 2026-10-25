@@ -13,17 +13,15 @@ namespace wp::lan_lobby {
 
 class Lobby::Impl {
 public:
-    Impl() : isHostFlag(false), connected(false) {
+    Impl() : isHostFlag(false), connected(false), serverSocket(INVALID_SOCKET), discoverySocket(INVALID_SOCKET) {
         WSADATA wsaData;
         WSAStartup(MAKEWORD(2, 2), &wsaData);
 
-        // Créer socket UDP pour découverte
         discoverySocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
         int broadcastEnable = 1;
         setsockopt(discoverySocket, SOL_SOCKET, SO_BROADCAST,
                    reinterpret_cast<char*>(&broadcastEnable), sizeof(broadcastEnable));
 
-        // Bind sur port découverte
         sockaddr_in addr{};
         addr.sin_family = AF_INET;
         addr.sin_port = htons(28081);
@@ -40,7 +38,6 @@ public:
     bool startHost(const std::string& partyName, int maxPlayers) {
         isHostFlag = true;
 
-        // Créer socket serveur TCP
         serverSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         if (serverSocket == INVALID_SOCKET) return false;
 
@@ -58,7 +55,6 @@ public:
         listen(serverSocket, SOMAXCONN);
         connected = true;
 
-        // Démarrer thread broadcast
         broadcastThread = std::thread([this, partyName, maxPlayers]() {
             while (isHostFlag) {
                 sockaddr_in broadcastAddr{};
@@ -66,8 +62,7 @@ public:
                 broadcastAddr.sin_port = htons(28081);
                 broadcastAddr.sin_addr.s_addr = htonl(INADDR_BROADCAST);
 
-                std::string msg = "PARTY:" + partyName + ":" +
-                                 std::to_string(maxPlayers) + ":0";
+                std::string msg = "PARTY:" + partyName + ":" + std::to_string(maxPlayers) + ":0";
                 sendto(discoverySocket, msg.c_str(), msg.length(), 0,
                        reinterpret_cast<sockaddr*>(&broadcastAddr), sizeof(broadcastAddr));
 
@@ -81,21 +76,20 @@ public:
 
     std::vector<Party> discoverParties(int timeoutMs) {
         std::vector<Party> parties;
-
-        // Démarrer thread d'écoute
         std::atomic<bool> done{false};
-        std::thread listener([this, &parties, &done]() {
+        auto start = std::chrono::steady_clock::now();
+
+        std::thread listener([this, &parties, &done, timeoutMs, start]() {
             char buffer[512];
             sockaddr_in fromAddr{};
             int fromLen = sizeof(fromAddr);
 
-            auto start = std::chrono::steady_clock::now();
             while (!done) {
                 fd_set readSet;
                 FD_ZERO(&readSet);
                 FD_SET(discoverySocket, &readSet);
 
-                timeval tv{0, 100000}; // 100ms
+                timeval tv{0, 100000};
                 int result = select(0, &readSet, nullptr, nullptr, &tv);
 
                 if (result > 0) {
@@ -105,7 +99,6 @@ public:
                         buffer[bytes] = '\0';
                         std::string msg(buffer);
 
-                        // Parser PARTY:name:maxPlayers:players
                         if (msg.rfind("PARTY:", 0) == 0) {
                             auto parts = split(msg.substr(6), ':');
                             if (parts.size() >= 3) {
@@ -156,9 +149,7 @@ public:
     }
 
     int measurePing(const std::string& ip) {
-        // Mesure simple via TCP connect
         auto start = std::chrono::high_resolution_clock::now();
-
         SOCKET testSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         if (testSocket == INVALID_SOCKET) return 999;
 
@@ -191,8 +182,8 @@ public:
         return tokens;
     }
 
-    SOCKET serverSocket = INVALID_SOCKET;
-    SOCKET discoverySocket = INVALID_SOCKET;
+    SOCKET serverSocket;
+    SOCKET discoverySocket;
     std::atomic<bool> isHostFlag;
     std::atomic<bool> connected;
     std::thread broadcastThread;
@@ -214,19 +205,18 @@ bool Lobby::joinParty(const Party& party) {
 }
 
 bool Lobby::isHost() const {
-    return impl->isHostFlag;
+    return impl && impl->isHostFlag.load();
 }
 
 bool Lobby::isConnected() const {
-    return impl->connected;
+    return impl && impl->connected.load();
 }
 
 std::string Lobby::getServerIP() const {
-    return "127.0.0.1"; // TODO: récupérer IP réelle
+    return "127.0.0.1";
 }
 
 void Lobby::refreshParties() {
-    // TODO: implémenter refresh
 }
 
 } // namespace wp::lan_lobby
