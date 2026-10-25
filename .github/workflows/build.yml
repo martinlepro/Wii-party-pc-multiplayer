@@ -27,7 +27,6 @@ jobs:
           mingw-w64-ucrt-x86_64-cmake
           mingw-w64-ucrt-x86_64-ninja
           mingw-w64-ucrt-x86_64-python
-          mingw-w64-ucrt-x86_64-pip
 
     - name: Setup Python
       uses: actions/setup-python@v5
@@ -39,11 +38,15 @@ jobs:
       run: |
         pip install -r requirements.txt || true
 
+    - name: Generate DOL modules
+      shell: msys2 {0}
+      run: |
+        python recompiler/recomp.py
+
     - name: Generate REL modules
       shell: msys2 {0}
       run: |
         python recompiler/recomp_rel.py --all
-      continue-on-error: true
 
     - name: Configure CMake
       shell: msys2 {0}

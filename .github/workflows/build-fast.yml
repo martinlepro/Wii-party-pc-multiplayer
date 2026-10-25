@@ -29,7 +29,6 @@ jobs:
           mingw-w64-ucrt-x86_64-cmake
           mingw-w64-ucrt-x86_64-ninja
           mingw-w64-ucrt-x86_64-python
-          mingw-w64-ucrt-x86_64-pip
 
     - name: Cache CMake build
       uses: actions/cache@v4
@@ -44,13 +43,15 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Generate REL modules if needed
+    - name: Generate DOL modules
       shell: msys2 {0}
       run: |
-        if [ ! -d "build/wiiparty/generated/modules" ]; then
-          python recompiler/recomp_rel.py --all
-        fi
-      continue-on-error: true
+        python recompiler/recomp.py
+
+    - name: Generate REL modules
+      shell: msys2 {0}
+      run: |
+        python recompiler/recomp_rel.py --all
 
     - name: Configure CMake
       shell: msys2 {0}
