@@ -1,0 +1,93 @@
+name: Fast Build Wii Party Recomp
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '.gitignore'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup MSYS2
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: ucrt64
+        update: true
+        install: >-
+          mingw-w64-ucrt-x86_64-gcc
+          mingw-w64-ucrt-x86_64-cmake
+          mingw-w64-ucrt-x86_64-ninja
+          mingw-w64-ucrt-x86_64-python
+          mingw-w64-ucrt-x86_64-pip
+
+    - name: Cache CMake build
+      uses: actions/cache@v4
+      with:
+        path: build/out
+        key: ${{ runner.os }}-build-${{ hashFiles('**/CMakeLists.txt', '**/*.cpp') }}
+        restore-keys: |
+          ${{ runner.os }}-build-
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Generate REL modules if needed
+      shell: msys2 {0}
+      run: |
+        if [ ! -d "build/wiiparty/generated/modules" ]; then
+          python recompiler/recomp_rel.py --all
+        fi
+      continue-on-error: true
+
+    - name: Configure CMake
+      shell: msys2 {0}
+      run: |
+        cmake -S . -B build/out -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DWP_TRACE_CALLS=OFF \
+          -DWP_GAME=wiiparty
+
+    - name: Build Wii Party
+      shell: msys2 {0}
+      run: |
+        cmake --build build/out --target wiiparty -j 8
+
+    - name: Test executable exists
+      shell: msys2 {0}
+      run: |
+        if [ -f "build/out/wiiparty.exe" ]; then
+          echo "Build successful!"
+          ls -lh build/out/wiiparty.exe
+        else
+          echo "Build failed!"
+          exit 1
+        fi
+
+    - name: Copy runtime DLLs
+      shell: msys2 {0}
+      run: |
+        cp /ucrt64/bin/libstdc++-6.dll build/out/ || true
+        cp /ucrt64/bin/libgcc_s_seh-1.dll build/out/ || true
+        cp /ucrt64/bin/libwinpthread-1.dll build/out/ || true
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: wiiparty-windows-${{ github.sha }}
+        path: |
+          build/out/wiiparty.exe
+          build/out/*.dll
+        retention-days: 30

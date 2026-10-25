@@ -1,0 +1,30 @@
+
+=== mr001 : 2926 fonctions candidates ===
+
+Ressource : b'necessary boards = %d\n'
+  Fonction : section 1, offset 0x3e0b0
+  Référence : 0x3e246
+     0x0103e238  stw  [word=0x901f0000]
+     0x0103e23c  creqv  [word=0x4cc63242]
+     0x0103e240  b  [word=0x4bfc2101]
+  >> 0x0103e244  addis  [word=0x3c600000]
+     0x0103e248  lwz  [word=0x809f0000]
+     0x0103e24c  addi  [word=0x38630000]
+     0x0103e250  crxor  [word=0x4cc63182]
+
+Ressource : b'necessary boards = %d\n'
+  Fonction : section 1, offset 0x3e0b0
+  Référence : 0x3e24e
+     0x0103e240  b  [word=0x4bfc2101]
+     0x0103e244  addis  [word=0x3c600000]
+     0x0103e248  lwz  [word=0x809f0000]
+  >> 0x0103e24c  addi  [word=0x38630000]
+     0x0103e250  crxor  [word=0x4cc63182]
+     0x0103e254  b  [word=0x4bfc20ed]
+     0x0103e258  addi  [word=0x3bc00000]
+
+Références affichées : 2
+
+=== mr701 : 2267 fonctions candidates ===
+
+Références affichées : 0

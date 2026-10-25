@@ -1,0 +1,2 @@
+# Python dependencies for Wii Party Recomp
+# Add any required Python packages here
