@@ -7,5 +7,7 @@ int getSyncedDiceValue();
 bool isSyncEnabled();
 void setWaitForSync(bool wait);
 bool shouldWaitForSync();
+void notifyRollRequest();
+bool isSocketValid();
 
 } // namespace wp::dice_sync

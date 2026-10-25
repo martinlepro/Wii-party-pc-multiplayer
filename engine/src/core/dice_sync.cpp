@@ -6,6 +6,7 @@
 #include <thread>
 #include <mutex>
 #include <string>
+#include <cstring>
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -14,7 +15,7 @@ namespace wp::dice_sync {
 std::atomic<int> g_syncedDiceValue{0};
 std::atomic<bool> g_diceSyncEnabled{false};
 std::atomic<bool> g_waitForSync{false};
-SOCKET g_socket = INVALID_SOCKET;
+static SOCKET g_socket = INVALID_SOCKET;
 std::mutex g_syncMutex;
 
 bool initNetwork(const char* serverIP) {
@@ -93,6 +94,17 @@ void setWaitForSync(bool wait) {
 
 bool shouldWaitForSync() {
     return g_waitForSync.load();
+}
+
+void notifyRollRequest() {
+    if (g_socket != INVALID_SOCKET) {
+        const char* msg = "/roll_server\n";
+        send(g_socket, msg, strlen(msg), 0);
+    }
+}
+
+bool isSocketValid() {
+    return g_socket != INVALID_SOCKET;
 }
 
 } // namespace wp::dice_sync
