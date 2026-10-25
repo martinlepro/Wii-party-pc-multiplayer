@@ -10,7 +10,6 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -33,64 +32,30 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Install Python dependencies
-      shell: msys2 {0}
-      run: |
-        pip install -r requirements.txt || true
-
-    - name: Check if generated modules exist
-      id: check_generated
-      shell: msys2 {0}
-      run: |
-        if [ -d "build/wiiparty/generated/dol" ] && [ -d "build/wiiparty/generated/modules/boot" ]; then
-          echo "has_generated=true" >> $GITHUB_OUTPUT
-        else
-          echo "has_generated=false" >> $GITHUB_OUTPUT
-        fi
-
-    - name: Generate DOL modules (if missing)
-      if: steps.check_generated.outputs.has_generated == 'false'
-      shell: msys2 {0}
-      run: |
-        if [ -f "games/wiiparty/extracted/sys/main.dol" ]; then
-          python recompiler/recomp.py
-        else
-          echo "DOL source not found, skipping generation"
-        fi
-      continue-on-error: true
-
-    - name: Generate REL modules (if missing)
-      if: steps.check_generated.outputs.has_generated == 'false'
-      shell: msys2 {0}
-      run: |
-        if [ -d "games/wiiparty/extracted/files/rel" ]; then
-          python recompiler/recomp_rel.py --all
-        else
-          echo "REL source not found, skipping generation"
-        fi
-      continue-on-error: true
-
-    - name: Fail if no generated modules
-      if: steps.check_generated.outputs.has_generated == 'false'
-      shell: msys2 {0}
-      run: |
-        if [ ! -d "build/wiiparty/generated/dol" ] || [ ! -d "build/wiiparty/generated/modules/boot" ]; then
-          echo "ERROR: No generated modules found."
-          exit 1
-        fi
-
     - name: Configure CMake
       shell: msys2 {0}
       run: |
         cmake -S . -B build/out -G Ninja \
           -DCMAKE_BUILD_TYPE=Release \
           -DWP_TRACE_CALLS=OFF \
+          -DWP_CONSOLE=ON \
           -DWP_GAME=wiiparty
 
     - name: Build Wii Party
       shell: msys2 {0}
       run: |
         cmake --build build/out --target wiiparty -j 8
+
+    - name: Test executable exists
+      shell: msys2 {0}
+      run: |
+        if [ -f "build/out/wiiparty.exe" ]; then
+          echo "Build successful!"
+          ls -lh build/out/wiiparty.exe
+        else
+          echo "Build failed!"
+          exit 1
+        fi
 
     - name: Copy runtime DLLs
       shell: msys2 {0}
