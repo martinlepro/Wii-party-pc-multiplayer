@@ -1,6 +1,7 @@
 #include "wp/cpu.h"
 #include "wp/modules.h"
 #include "wp/dice_sync.h"
+#include "wp/threads.h"
 #include <iostream>
 #include <winsock2.h>
 
@@ -31,8 +32,8 @@ void f_mr001_0106d110_hook(wp::Cpu& c) {
 
 // Hook pour f_mr001_01006ae0 - point d'entrée principal Board Game Island
 void f_mr001_01006ae0_hook(wp::Cpu& c) {
-    // Détecter le lancement de dés - on utilise g_resume_address pour savoir où on est
-    uint32_t resume_addr = wp::g_resume_address;
+    // Détecter le lancement de dés - on utilise take_resume_address() pour savoir où on est
+    uint32_t resume_addr = wp::take_resume_address();
 
     // Les adresses connues pour le RNG du dé
     if (resume_addr == 0x1006e50 || resume_addr == 0x1006d18 || resume_addr == 0x1006db0) {
