@@ -38,15 +38,30 @@ jobs:
       run: |
         pip install -r requirements.txt || true
 
+    - name: Download pre-generated modules
+      uses: actions/download-artifact@v4
+      with:
+        name: wiiparty-generated
+        path: build/wiiparty/generated
+      continue-on-error: true
+
     - name: Generate DOL modules
       shell: msys2 {0}
       run: |
-        python recompiler/recomp.py
+        if [ ! -d "build/wiiparty/generated/dol" ]; then
+          python recompiler/recomp.py
+        else
+          echo "DOL modules already present, skipping generation"
+        fi
 
     - name: Generate REL modules
       shell: msys2 {0}
       run: |
-        python recompiler/recomp_rel.py --all
+        if [ ! -d "build/wiiparty/generated/modules/boot" ]; then
+          python recompiler/recomp_rel.py --all
+        else
+          echo "REL modules already present, skipping generation"
+        fi
 
     - name: Configure CMake
       shell: msys2 {0}
@@ -60,6 +75,15 @@ jobs:
       shell: msys2 {0}
       run: |
         cmake --build build/out --target wiiparty -j 8
+
+    - name: Upload generated modules for future builds
+      uses: actions/upload-artifact@v4
+      with:
+        name: wiiparty-generated
+        path: |
+          build/wiiparty/generated/dol
+          build/wiiparty/generated/modules
+        retention-days: 30
 
     - name: Copy runtime DLLs
       shell: msys2 {0}
