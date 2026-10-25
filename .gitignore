@@ -22,6 +22,7 @@
 /ghidra/extensions/
 
 /build/
+!/build/wiiparty/generated/
 *.o
 *.obj
 *.pdb

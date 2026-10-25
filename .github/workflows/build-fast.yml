@@ -43,29 +43,45 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Download pre-generated modules
-      uses: actions/download-artifact@v4
-      with:
-        name: wiiparty-generated
-        path: build/wiiparty/generated
-      continue-on-error: true
-
-    - name: Generate DOL modules
+    - name: Check if generated modules exist
+      id: check_generated
       shell: msys2 {0}
       run: |
-        if [ ! -d "build/wiiparty/generated/dol" ]; then
-          python recompiler/recomp.py
+        if [ -d "build/wiiparty/generated/dol" ] && [ -d "build/wiiparty/generated/modules/boot" ]; then
+          echo "has_generated=true" >> $GITHUB_OUTPUT
         else
-          echo "DOL modules already present, skipping generation"
+          echo "has_generated=false" >> $GITHUB_OUTPUT
         fi
 
-    - name: Generate REL modules
+    - name: Generate DOL modules (if missing)
+      if: steps.check_generated.outputs.has_generated == 'false'
       shell: msys2 {0}
       run: |
-        if [ ! -d "build/wiiparty/generated/modules/boot" ]; then
+        if [ -f "games/wiiparty/extracted/sys/main.dol" ]; then
+          python recompiler/recomp.py
+        else
+          echo "DOL source not found, skipping generation"
+        fi
+      continue-on-error: true
+
+    - name: Generate REL modules (if missing)
+      if: steps.check_generated.outputs.has_generated == 'false'
+      shell: msys2 {0}
+      run: |
+        if [ -d "games/wiiparty/extracted/files/rel" ]; then
           python recompiler/recomp_rel.py --all
         else
-          echo "REL modules already present, skipping generation"
+          echo "REL source not found, skipping generation"
+        fi
+      continue-on-error: true
+
+    - name: Fail if no generated modules
+      if: steps.check_generated.outputs.has_generated == 'false'
+      shell: msys2 {0}
+      run: |
+        if [ ! -d "build/wiiparty/generated/dol" ] || [ ! -d "build/wiiparty/generated/modules/boot" ]; then
+          echo "ERROR: No generated modules found."
+          exit 1
         fi
 
     - name: Configure CMake
@@ -91,15 +107,6 @@ jobs:
           echo "Build failed!"
           exit 1
         fi
-
-    - name: Upload generated modules for future builds
-      uses: actions/upload-artifact@v4
-      with:
-        name: wiiparty-generated
-        path: |
-          build/wiiparty/generated/dol
-          build/wiiparty/generated/modules
-        retention-days: 30
 
     - name: Copy runtime DLLs
       shell: msys2 {0}
