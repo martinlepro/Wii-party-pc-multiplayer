@@ -87,6 +87,30 @@ void report_terminate() {
 
 int run(int argc, char** argv) {
     wp::settings::load(wp::game::description().settings_file);
+
+    // === LAN LOBBY INTERFACE ===
+    // Vérifier si on doit afficher le lobby LAN
+    const char* lanLobby = std::getenv("WP_LAN_LOBBY");
+    if (lanLobby && std::string(lanLobby) == "1") {
+        std::cout << "\n╔══════════════════════════════════════╗\n";
+        std::cout << "║      WII PARTY LAN LOBBY             ║\n";
+        std::cout << "╚══════════════════════════════════════╝\n\n";
+
+        // Initialiser synchronisation dés si nécessaire
+        const char* lanServer = std::getenv("WP_LAN_SERVER");
+        if (lanServer && strlen(lanServer) > 0) {
+            std::cout << "[LAN] Connexion au serveur: " << lanServer << "\n";
+            std::cout << "[LAN] Synchronisation des dés activée\n\n";
+        } else {
+            const char* lanHost = std::getenv("WP_LAN_HOST");
+            if (lanHost && std::string(lanHost) == "1") {
+                std::cout << "[LAN] Mode Host activé\n";
+                std::cout << "[LAN] En attente de joueurs...\n";
+                std::cout << "[LAN] Partagez votre IP avec les autres joueurs\n\n";
+            }
+        }
+    }
+
     std::string extracted = argc > 1 ? argv[1] : wp::game::description().data_directory;
     int timeout_seconds = argc > 2 ? std::atoi(argv[2]) : 0;
 

@@ -11,6 +11,8 @@ add_library(wp_engine STATIC
     src/core/modules.cpp
     src/core/format.cpp
     src/core/log.cpp
+    src/core/dice_sync.cpp
+    src/core/dice_hook.cpp
     src/gpu/gx.cpp
     src/gpu/gx_lighting.cpp
     src/gpu/custom_textures.cpp
@@ -40,6 +42,7 @@ add_library(wp_engine STATIC
     src/platform/options.cpp
     src/platform/mii.cpp
     src/platform/options_window.cpp
+    src/platform/lan_lobby.cpp
 )
 if(WIN32)
     target_sources(wp_engine PRIVATE src/gpu/gx_render.cpp src/platform/video.cpp)
