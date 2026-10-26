@@ -112,7 +112,15 @@ int run(int argc, char** argv) {
         }
     }
 
-    std::string extracted = argc > 1 ? argv[1] : wp::game::description().data_directory;
+    std::string extracted;
+    if (argc > 1) {
+        extracted = argv[1];
+    } else {
+        char exePath[MAX_PATH];
+        GetModuleFileNameA(NULL, exePath, MAX_PATH);
+        std::string exeDir = std::filesystem::path(exePath).parent_path().string();
+        extracted = exeDir + "/" + wp::game::description().data_directory;
+    }
     int timeout_seconds = argc > 2 ? std::atoi(argv[2]) : 0;
 
     wp::g_memory = static_cast<uint8_t*>(std::calloc(wp::kMemorySize, 1));

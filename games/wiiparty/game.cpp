@@ -15,7 +15,7 @@ constexpr const char* kSidewaysModules[] = {
 constexpr Description kDescription = {
     "Wii Party",
     "wiiparty",
-    "games/wiiparty/extracted",
+    "./sys",
     "games/wiiparty/nand",
     "games/wiiparty/settings.ini",
     "games/wiiparty/textures",
